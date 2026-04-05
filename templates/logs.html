@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>📍 朋友追蹤地圖</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+  body { margin:0; padding:0; font-family: Arial; }
+  #map { height: 100vh; width: 100%; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  let map = L.map('map').setView([25.03, 121.56], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(map);
+
+  // 將資料按 user_id 分組
+  const locations = {{ locations|tojson }};
+  const friends = {};
+
+  locations.forEach(loc => {
+    const id = loc.user_id || 'unknown';
+    if (!friends[id]) friends[id] = [];
+    friends[id].push([loc.latitude, loc.longitude, loc.timestamp]);
+  });
+
+  const colors = ['red','blue','green','orange','purple','brown','pink','yellow'];
+  let colorIndex = 0;
+
+  for (const [user, coords] of Object.entries(friends)) {
+    const latlngs = coords.map(c => [c[0], c[1]]);
+    const lineColor = colors[colorIndex % colors.length];
+    colorIndex++;
+
+    // 畫軌跡線
+    L.polyline(latlngs, {color: lineColor}).addTo(map);
+
+    // 標記最後位置
+    const last = coords[coords.length - 1];
+    L.marker([last[0], last[1]])
+      .addTo(map)
+      .bindPopup(`<b>${user}</b><br>${last[2]}`);
+  }
+</script>
+</body>
+</html>
